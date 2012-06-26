@@ -278,6 +278,7 @@ func (e Event) String() (s string) {
 type Error interface {
 	String() string
 	Code() int
+	Error() string
 }
 
 type errorType struct {
@@ -296,6 +297,10 @@ func (error *errorType) String() (result string) {
 		result = C.GoString(C.zerror(error.zkrc)) // Static, no need to free it.
 	}
 	return
+}
+
+func (error *errorType) Error() string {
+	return error.String()
 }
 
 // Code returns the error code that may be compared against one of
