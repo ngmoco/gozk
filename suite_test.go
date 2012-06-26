@@ -1,13 +1,13 @@
 package gozk_test
 
 import (
-	. "launchpad.net/gocheck"
-	"testing"
-	"io/ioutil"
-	"path"
 	"fmt"
-	"os"
 	"gozk"
+	"io/ioutil"
+	. "launchpad.net/gocheck"
+	"os"
+	"path"
+	"testing"
 	"time"
 )
 
@@ -32,7 +32,6 @@ type S struct {
 }
 
 var logLevel = 0 //gozk.LOG_ERROR
-
 
 var testZooCfg = ("dataDir=%s\n" +
 	"clientPort=%d\n" +
@@ -120,7 +119,7 @@ func (s *S) SetUpSuite(c *C) {
 
 	s.deadWatches = make(chan bool)
 
-	var err os.Error
+	var err error
 
 	s.zkRoot = os.Getenv("ZKROOT")
 	if s.zkRoot == "" {
@@ -139,7 +138,7 @@ func (s *S) SetUpSuite(c *C) {
 	s.zkServerOut, err = os.OpenFile(path.Join(s.zkTestRoot, "stdout.txt"),
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
-		panic("Can't open stdout.txt file for server: " + err.String())
+		panic("Can't open stdout.txt file for server: " + err.Error())
 	}
 
 	dataDir := path.Join(s.zkTestRoot, "data")
@@ -150,19 +149,19 @@ func (s *S) SetUpSuite(c *C) {
 
 	err = os.Setenv("ZOOCFGDIR", confDir)
 	if err != nil {
-		panic("Can't set $ZOOCFGDIR: " + err.String())
+		panic("Can't set $ZOOCFGDIR: " + err.Error())
 	}
 
 	zooCfg := []byte(fmt.Sprintf(testZooCfg, dataDir, s.zkTestPort))
 	err = ioutil.WriteFile(path.Join(confDir, "zoo.cfg"), zooCfg, 0644)
 	if err != nil {
-		panic("Can't write zoo.cfg: " + err.String())
+		panic("Can't write zoo.cfg: " + err.Error())
 	}
 
 	log4jPrp := []byte(testLog4jPrp)
 	err = ioutil.WriteFile(path.Join(confDir, "log4j.properties"), log4jPrp, 0644)
 	if err != nil {
-		panic("Can't write log4j.properties: " + err.String())
+		panic("Can't write log4j.properties: " + err.Error())
 	}
 
 	s.StartZK()
@@ -177,12 +176,12 @@ func (s *S) StartZK() {
 	attr := os.ProcAttr{Files: []*os.File{os.Stdin, s.zkServerOut, os.Stderr}}
 	proc, err := os.StartProcess(s.zkServerSh, []string{s.zkServerSh, "start"}, &attr)
 	if err != nil {
-		panic("Problem executing zkServer.sh start: " + err.String())
+		panic("Problem executing zkServer.sh start: " + err.Error())
 	}
 
 	result, err := proc.Wait(0)
 	if err != nil {
-		panic(err.String())
+		panic(err.Error())
 	} else if result.ExitStatus() != 0 {
 		panic("'zkServer.sh start' exited with non-zero status")
 	}
@@ -192,12 +191,12 @@ func (s *S) StopZK() {
 	attr := os.ProcAttr{Files: []*os.File{os.Stdin, s.zkServerOut, os.Stderr}}
 	proc, err := os.StartProcess(s.zkServerSh, []string{s.zkServerSh, "stop"}, &attr)
 	if err != nil {
-		panic("Problem executing zkServer.sh stop: " + err.String() +
+		panic("Problem executing zkServer.sh stop: " + err.Error() +
 			" (look for runaway java processes!)")
 	}
 	result, err := proc.Wait(0)
 	if err != nil {
-		panic(err.String())
+		panic(err.Error())
 	} else if result.ExitStatus() != 0 {
 		panic("'zkServer.sh stop' exited with non-zero status " +
 			"(look for runaway java processes!)")

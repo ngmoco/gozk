@@ -10,6 +10,7 @@ package gozk
 
 /*
 #cgo CFLAGS: -I/usr/include/c-client-src
+#cgo CFLAGS: -I/usr/local/include/c-client-src
 #cgo LDFLAGS: -lzookeeper_mt
 
 #include <zookeeper.h>
@@ -19,9 +20,8 @@ import "C"
 
 import (
 	"fmt"
-	"unsafe"
 	"sync"
-	"os"
+	"unsafe"
 )
 
 // -----------------------------------------------------------------------
@@ -282,16 +282,16 @@ type Error interface {
 
 type errorType struct {
 	zkrc C.int
-	err  os.Error
+	err  error
 }
 
-func newError(zkrc C.int, err os.Error) Error {
+func newError(zkrc C.int, err error) Error {
 	return &errorType{zkrc, err}
 }
 
 func (error *errorType) String() (result string) {
 	if error.zkrc == ZSYSTEMERROR && error.err != nil {
-		result = error.err.String()
+		result = error.err.Error()
 	} else {
 		result = C.GoString(C.zerror(error.zkrc)) // Static, no need to free it.
 	}
@@ -424,7 +424,7 @@ func internalInit(servers string, recvTimeoutNS int64, clientId *ClientId) (*Zoo
 	zk.sessionWatchId = watchId
 
 	cservers := C.CString(servers)
-	handle, cerr := C.zookeeper_init(cservers, C.watch_handler, C.int(recvTimeoutNS / 1e6), cId, unsafe.Pointer(watchId), 0)
+	handle, cerr := C.zookeeper_init(cservers, C.watch_handler, C.int(recvTimeoutNS/1e6), cId, unsafe.Pointer(watchId), 0)
 	C.free(unsafe.Pointer(cservers))
 	if handle == nil {
 		zk.closeAllWatches()
@@ -822,7 +822,7 @@ func buildACLVector(aclv []ACL) *C.struct_ACL_vector {
 // -----------------------------------------------------------------------
 // RetryChange utility method.
 
-type ChangeFunc func(oldValue string, oldStat Stat) (newValue string, err os.Error)
+type ChangeFunc func(oldValue string, oldStat Stat) (newValue string, err error)
 
 // RetryChange runs changeFunc to attempt to atomically change path
 // in a lock free manner, and retries in case there was another
@@ -954,8 +954,8 @@ func (zk *ZooKeeper) createWatch(session bool) (watchId uintptr, watchChannel ch
 func (zk *ZooKeeper) forgetWatch(watchId uintptr) {
 	watchMutex.Lock()
 	defer watchMutex.Unlock()
-	zk.watchChannels[watchId] = nil, false
-	watchZooKeepers[watchId] = nil, false
+	delete(zk.watchChannels, watchId)
+	delete(watchZooKeepers, watchId)
 }
 
 // closeAllWatches closes all watch channels for zk.
@@ -964,8 +964,8 @@ func (zk *ZooKeeper) closeAllWatches() {
 	defer watchMutex.Unlock()
 	for watchId, ch := range zk.watchChannels {
 		close(ch)
-		zk.watchChannels[watchId] = nil, false
-		watchZooKeepers[watchId] = nil, false
+		delete(zk.watchChannels, watchId)
+		delete(watchZooKeepers, watchId)
 	}
 }
 
@@ -1009,8 +1009,8 @@ func sendEvent(watchId uintptr, event Event) {
 		}
 	}
 	if watchId != zk.sessionWatchId {
-		zk.watchChannels[watchId] = nil, false
-		watchZooKeepers[watchId] = nil, false
+		delete(zk.watchChannels, watchId)
+		delete(watchZooKeepers, watchId)
 		close(ch)
 	}
 }
