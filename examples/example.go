@@ -1,11 +1,11 @@
 package main
 
 import (
-    "gozk"
+    "github.com/ngmoco/gozk"
 )
 
 func main() {
-    zk, session, err := gozk.Init("localhost:2181", 5000)
+    zk, session, err := gozk.Init("localhost:2181", 100e6) // 100ms
     if err != nil {
         println("Couldn't connect: " + err.String())
         return
